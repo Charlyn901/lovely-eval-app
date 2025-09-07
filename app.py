@@ -13,6 +13,7 @@ import random
 
 # ------------- 配置 -------------
 DATA_FILE = "data.xlsx"
+WISH_FILE = "wishes.json"  # 【棕红新增】心愿清单文件
 MSG_FILE = "messages.csv"
 EVENTS_FILE = "events.json"
 UPLOAD_DIR = Path("uploads")
@@ -33,20 +34,50 @@ SCORE_MAP = {"S+":5.0,"S":4.7,"S-":4.4,
 st.set_page_config(page_title="小狗给宝宝的专属小站", page_icon="💖", layout="wide")
 
 # Responsive CSS + mobile tweaks
-st.markdown("""
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-:root{ --bg1:#f0fffb; --header1:#00d2ff; --header2:#3a7bd5; --card:#ffffff; --text:#103a3a; --muted:#557; }
-body{ background:linear-gradient(180deg,var(--bg1),#fff);}
-.header{ background:linear-gradient(90deg,var(--header1),var(--header2)); padding:14px;border-radius:14px;color:#fff;margin-bottom:12px;}
-.card{ border:1px solid rgba(0,0,0,0.06); border-radius:14px;padding:14px;background:var(--card); box-shadow:0 12px 28px rgba(0,0,0,0.04); margin-bottom:14px;}
-.small-muted{ color:var(--muted); }
-.stButton>button{ border-radius:10px; border:1px solid rgba(0,0,0,0.1); }</style>
-""", unsafe_allow_html=True)
+# ------------- 样式主题切换 -------------  # 【棕红新增】
+theme_css = ""
 
+if st.session_state.get("theme") == "樱粉清新":
+    theme_css = """
+    <style>
+    body{background:linear-gradient(180deg,#fff8fb,#fff);}
+    .header{background:linear-gradient(90deg,#ff9a9e,#fecfef);padding:12px;border-radius:12px;color:#fff;}
+    .card{background:#fff;padding:12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.06);}
+    </style>
+    """
+
+elif st.session_state.get("theme") == "夜间黑银":
+    theme_css = """
+    <style>
+    body{background:#111;color:#eee;}
+    .header{background:linear-gradient(90deg,#222,#333);padding:12px;border-radius:12px;color:#fff;}
+    .card{background:#1a1a1a;padding:12px;border-radius:10px;box-shadow:0 0 0 1px #2a2a2a;}
+    </style>
+    """
+
+elif st.session_state.get("theme") == "极光薄荷":
+    theme_css = """
+    <style>
+    body{background:linear-gradient(180deg,#f0fffb,#fff);}
+    .header{background:linear-gradient(90deg,#00d2ff,#3a7bd5);padding:14px;border-radius:14px;color:#fff;}
+    .card{background:#fff;padding:14px;border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,0.04);}
+    </style>
+    """
+
+st.markdown(theme_css, unsafe_allow_html=True)  # 【棕红新增】
 st.markdown('<div class="header"><h2 style="margin:0">💖 专属小站 — 给宝贝的小工具</h2></div>', unsafe_allow_html=True)
 
 # ------------- I/O helpers -------------
+def load_wishes():  # 【棕红新增】
+    if Path(WISH_FILE).exists():
+        try:
+            return json.loads(Path(WISH_FILE).read_text(encoding="utf-8"))
+        except:
+            return []
+    return []
+
+def save_wishes(wishes):  # 【棕红新增】
+    Path(WISH_FILE).write_text(json.dumps(wishes, ensure_ascii=False, indent=2), encoding="utf-8")
 def now_str(offset_hours:int=0):  # 统一产生“本地时间字符串”
     return (datetime.utcnow() + timedelta(hours=offset_hours)).strftime("%Y-%m-%d %H:%M:%S")
 def load_data():
@@ -165,6 +196,9 @@ with st.sidebar:
         save_data(st.session_state.df)
         st.success("已清空记录")
 
+    st.markdown("---")
+    theme = st.selectbox("🎨 选择主题", ["樱粉清新","夜间黑银","极光薄荷"])  
+    st.session_state["theme"] = theme 
 # ------------- main: add form & preview -------------
 left, right = st.columns([1,1.3])
 
@@ -358,6 +392,27 @@ else:
     top_happy = df[df["愉悦度"]=="愉悦"]["名称"].value_counts().head(10)
     st.write("宝宝特别喜欢（愉悦次数最多的物品）:")
     st.table(top_happy.reset_index().rename(columns={"index":"名称","名称":"次数"}))
+# ------------- 心情连击 -------------  # 【棕红新增】
+st.markdown("---")
+st.subheader("💖 心情连击")
+
+if not df.empty:
+    # 取日期和心情
+    df_mood = df.copy()
+    df_mood["日期"] = pd.to_datetime(df_mood["时间"]).dt.date
+    df_mood = df_mood.groupby("日期")["愉悦度"].apply(lambda x: "愉悦" if "愉悦" in x.values else "非愉悦")
+    
+    streak = 0
+    for mood in reversed(df_mood.values):
+        if mood == "愉悦":
+            streak += 1
+        else:
+            break
+    
+    st.write(f"你们已经连续 **{streak} 天愉悦** ✨")
+else:
+    st.info("还没有数据，快去添加第一条记录吧～")
+
 # ------------- 抽奖中心 -------------  # 【棕红新增】
 st.markdown("---")
 st.subheader("🎲 抽奖中心")
@@ -390,6 +445,38 @@ with tab3:
         save_lottery(lot_data)
         st.success("已保存奖池")
 
+# ------------- 心愿清单 -------------  # 【棕红新增】
+st.markdown("---")
+st.subheader("🌠 心愿清单")
+
+wishes = load_wishes()
+
+# 添加新心愿
+with st.form("add_wish"):
+    new_wish = st.text_input("输入一个心愿（例如：一起去看日出）")
+    submitted = st.form_submit_button("添加心愿")
+    if submitted and new_wish.strip():
+        wishes.append({"text": new_wish.strip(), "done": False})
+        save_wishes(wishes)
+        st.success("心愿已添加！")
+        st.experimental_rerun()
+
+# 展示心愿列表
+if wishes:
+    done_count = sum(1 for w in wishes if w["done"])
+    st.write(f"完成率：{done_count}/{len(wishes)} ✅")
+
+    for i, w in enumerate(wishes):
+        col1, col2 = st.columns([6,1])
+        with col1:
+            st.write(("✅ " if w["done"] else "🕗 ") + w["text"])
+        with col2:
+            if st.button("切换状态", key=f"wish_{i}"):
+                wishes[i]["done"] = not wishes[i]["done"]
+                save_wishes(wishes)
+                st.experimental_rerun()
+else:
+    st.info("还没有心愿，快添加一个吧～")
 # ------------- footer -------------
 st.markdown("---")
 c1, c2 = st.columns([1,1])
