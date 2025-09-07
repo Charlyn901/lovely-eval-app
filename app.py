@@ -91,9 +91,22 @@ def load_data():
         except Exception as e:
             st.error(f"读取 {DATA_FILE} 出错：{e}")
             return pd.DataFrame(columns=COLUMNS)
+   def load_data():
+    if Path(DATA_FILE).exists():
+        try:
+            df = pd.read_excel(DATA_FILE, engine="openpyxl")
+            for c in COLUMNS:
+                if c not in df.columns:
+                    df[c] = ""
+            if "记录ID" not in df.columns:  # 【修复】旧文件自动补列
+                df["记录ID"] = ""
+            df["记录ID"] = df["记录ID"].apply(lambda x: x if isinstance(x, str) and x.strip() else uuid4().hex)  # 【修复】
+            return df[COLUMNS]
+        except Exception as e:
+            st.error(f"读取 {DATA_FILE} 出错：{e}")
+            return pd.DataFrame(columns=COLUMNS)
     else:
         return pd.DataFrame(columns=COLUMNS)
-            if "记录ID" not in df.columns:  # 旧文件自动补列
                 df["记录ID"] = ""
             # 为空ID的行补一个uuid
             df["记录ID"] = df["记录ID"].apply(lambda x: x if isinstance(x,str) and x.strip() else uuid4().hex)  # 
@@ -263,9 +276,9 @@ with left:
                 "最终推荐": rec,
                 "愉悦度": mood,
                 "备注": remark,
-                "照片文件名": photo_name
-                "记录ID": uuid4().hex,  
-            }
+"照片文件名": photo_name,
+"记录ID": uuid4().hex,
+                           }
             st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
             save_data(st.session_state.df)
             st.success(f"已添加：{name} （{rec}）")
@@ -276,15 +289,16 @@ with left:
                     "有你在，一切都刚刚好。"
                 ]
                 st.info(random.choice(love_lines))
-base_type_set = set(BASE_TYPES)  
-type_options = ["全部"] + sorted(list(base_type_set.union(set(df_view["物品类型"].dropna().unique().tolist()))))  
-f_type = st.selectbox("按物品类型", options=type_options, index=0)  
-with right:
-    st.subheader("📚 记录总览（可筛选）")
-    df_view = st.session_state.df.copy()
+
     col1, col2, col3 = st.columns([1,1,1])
     with col1:
-        
+   with right:
+    st.subheader("📚 记录总览（可筛选）")
+    df_view = st.session_state.df.copy()  # 【修复：先复制 df】
+
+    base_type_set = set(BASE_TYPES)
+    type_options = ["全部"] + sorted(list(base_type_set.union(set(df_view["物品类型"].dropna().unique().tolist()))))
+    f_type = st.selectbox("按物品类型", options=type_options, index=0)     
     with col2:
         f_rec = st.selectbox("按最终推荐", options=["全部","推荐","还行","不推荐"], index=0)
     with col3:
@@ -319,8 +333,12 @@ if kw.strip():
             if row['备注']:
                 st.markdown(f"*备注：{row['备注']}*")    
 rid = row.get("记录ID","")  
-    if rid:
-        if st.button("🗑 删除该记录", key=f"del_{rid}"): 
+if rid:
+    if st.button("🗑 删除该记录", key=f"del_{rid}"):
+        df_all = st.session_state.df
+        st.session_state.df = df_all[df_all["记录ID"] != rid]
+        save_data(st.session_state.df)
+        st.experimental_rerun()
             df_all = st.session_state.df
             st.session_state.df = df_all[df_all["记录ID"] != rid]  
             save_data(st.session_state.df)  
