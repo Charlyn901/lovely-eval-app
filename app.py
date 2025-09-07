@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 from uuid import uuid4
-from datetime import datetime, date, timedelta
+from datetime import datetime
 import json
 import random
 import pytz
@@ -100,6 +100,18 @@ if "images" not in st.session_state:
 if "theme" not in st.session_state:
     st.session_state.theme = "樱粉清新"
 
+# ---------------- Sidebar 设置 ----------------
+with st.sidebar:
+    st.header("⚙ 设置")
+    # 权重调整
+    w1 = st.slider("主评级权重", 0.0, 1.0, 0.7, step=0.05)
+    w2 = round(1.0 - w1, 2)
+    st.text(f"次评级权重：{w2}")
+
+    # 主题切换
+    theme = st.selectbox("主题切换", ["樱粉清新","夜间黑银","极光薄荷"])
+    st.session_state.theme = theme
+
 # ---------------- Theme CSS ----------------
 def get_theme_css(name):
     if name == "樱粉清新":
@@ -146,7 +158,7 @@ with left:
         submitted = st.form_submit_button("保存")
     if submitted:
         v1, v2 = SCORE_MAP[sub1], SCORE_MAP[sub2]
-        final_score = round(0.7*v1+0.3*v2,3)
+        final_score = round(w1*v1+w2*v2,3)
         if final_score>=4.2: rec="推荐"
         elif final_score>=3.0: rec="还行"
         else: rec="不推荐"
@@ -167,6 +179,24 @@ with left:
         st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
         save_data(st.session_state.df)
         st.success("保存成功！")
+
+        # --- 情话 & 安慰 ---
+        love_lines = [
+            "宝贝，和你在一起的点滴我都想收藏。",
+            "看到你笑，我就觉得今天值了。",
+            "你就是我心里永远的欢喜。",
+            "有你的日子，普通的生活也会发光。"
+        ]
+        comfort_lines = [
+            "别难过啦，我永远在你身边陪着你。",
+            "抱抱你，一切都会慢慢好起来的。",
+            "小狗希望你能多笑一点，不开心都给我。",
+            "今天的乌云，也挡不住我对你满满的爱。"
+        ]
+        if mood == "不愉悦":
+            st.info(random.choice(comfort_lines))
+        else:
+            st.info(random.choice(love_lines))
 
 with right:
     st.subheader("📚 记录总览")
@@ -246,7 +276,7 @@ for w in wishes:
 # ---------------- 留言板 ----------------
 st.markdown("---")
 st.subheader("📝 留言板")
-msg_text = st.text_area("写下想说的话吧")
+msg_text = st.text_area("写下想说的话")
 if st.button("发送留言"):
     if msg_text.strip():
         save_message(msg_text.strip())
