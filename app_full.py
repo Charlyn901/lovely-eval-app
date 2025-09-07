@@ -246,7 +246,7 @@ for w in wishes:
 # ---------------- 留言板 ----------------
 st.markdown("---")
 st.subheader("📝 留言板")
-msg_text = st.text_area("写下想说的话")
+msg_text = st.text_area("写下想说的话吧")
 if st.button("发送留言"):
     if msg_text.strip():
         save_message(msg_text.strip())
