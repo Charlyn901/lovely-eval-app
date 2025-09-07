@@ -216,7 +216,7 @@ with right:
         if st.button("🗑 删除", key=f"del_{rid}"):
             st.session_state.df = st.session_state.df[st.session_state.df["记录ID"]!=rid]
             save_data(st.session_state.df)
-            st.experimental_rerun()
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- 心情连击 ----------------
@@ -263,7 +263,7 @@ if st.button("添加心愿"):
     if new_wish.strip():
         wishes.append({"text":new_wish.strip(),"done":False,"id":uuid4().hex})
         save_wishes(wishes)
-        st.experimental_rerun()
+        st.rerun()
 for w in wishes:
     col1,col2=st.columns([6,1])
     with col1: st.write(("✅" if w["done"] else "🔲")+w["text"])
@@ -271,7 +271,7 @@ for w in wishes:
         if st.button("切换", key=w["id"]):
             w["done"]=not w["done"]
             save_wishes(wishes)
-            st.experimental_rerun()
+            st.rerun()
 
 # ---------------- 留言板 ----------------
 st.markdown("---")
@@ -281,7 +281,7 @@ if st.button("发送留言"):
     if msg_text.strip():
         save_message(msg_text.strip())
         st.success("已保存")
-        st.experimental_rerun()
+        st.rerun()
 msgs = load_messages()
 for _, r in msgs.iloc[::-1].iterrows():
     st.write(f"> {r['时间']} — {r['留言']}")
