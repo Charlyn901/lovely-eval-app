@@ -10,7 +10,7 @@ import pytz
 # ---------------- CONFIG ----------------
 st.set_page_config(page_title="我们的专属小站", page_icon="💖", layout="wide")
 
-DATA_FILE = "data.xlsx"
+DATA_FILE = "data.csv"
 MSG_FILE = "messages.csv"
 LOTTERY_FILE = "lottery.json"
 WISH_FILE = "wishes.json"
@@ -40,7 +40,7 @@ def now_str():
 
 def load_data():
     if Path(DATA_FILE).exists():
-        df = pd.read_excel(DATA_FILE, engine="openpyxl")
+        df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
         for c in COLUMNS:
             if c not in df.columns:
                 df[c] = ""
@@ -52,7 +52,7 @@ def load_data():
         return pd.DataFrame(columns=COLUMNS)
 
 def save_data(df):
-    df.to_excel(DATA_FILE, index=False, engine="openpyxl")
+    df.to_csv(DATA_FILE, index=False, encoding="utf-8-sig")
 
 def load_messages():
     if Path(MSG_FILE).exists():
@@ -117,20 +117,20 @@ def get_theme_css(name):
     if name == "樱粉清新":
         return """
         <style>
-        body{background:#fff0f5;}
+        body, .stApp {background:#fff0f5;}
         .card{border-radius:12px; padding:10px; background:#fff7fb; margin-bottom:10px;}
         </style>
         """
     if name == "夜间黑银":
         return """
         <style>
-        body{background:#0f1113; color:#eaeaea;}
+        body, .stApp {background:#0f1113; color:#eaeaea;}
         .card{border-radius:12px; padding:10px; background:#1a1a1d; margin-bottom:10px;}
         </style>
         """
     return """
     <style>
-    body{background:#e0fff8;}
+    body, .stApp {background:#e0fff8;}
     .card{border-radius:12px; padding:10px; background:#f3fdff; margin-bottom:10px;}
     </style>
     """
