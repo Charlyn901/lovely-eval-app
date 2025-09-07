@@ -36,27 +36,12 @@ st.set_page_config(page_title="小狗给宝宝的专属小站", page_icon="💖"
 st.markdown("""
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-.header {
-  background: linear-gradient(90deg,#ff9a9e,#fecfef);
-  padding: 12px;
-  border-radius: 12px;
-  color: white;
-  margin-bottom: 8px;
-}
-.card {
-  border-radius:12px;
-  padding:10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,245,245,0.98));
-  margin-bottom:10px;
-}
-.small-muted { color: #666; font-size:12px; }
-@media (max-width:600px){
-  .header h2 { font-size:18px !important; }
-  .card { padding:8px; }
-  .small-muted { font-size:11px; }
-}
-</style>
+:root{ --bg1:#f0fffb; --header1:#00d2ff; --header2:#3a7bd5; --card:#ffffff; --text:#103a3a; --muted:#557; }
+body{ background:linear-gradient(180deg,var(--bg1),#fff);}
+.header{ background:linear-gradient(90deg,var(--header1),var(--header2)); padding:14px;border-radius:14px;color:#fff;margin-bottom:12px;}
+.card{ border:1px solid rgba(0,0,0,0.06); border-radius:14px;padding:14px;background:var(--card); box-shadow:0 12px 28px rgba(0,0,0,0.04); margin-bottom:14px;}
+.small-muted{ color:var(--muted); }
+.stButton>button{ border-radius:10px; border:1px solid rgba(0,0,0,0.1); }</style>
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="header"><h2 style="margin:0">💖 专属小站 — 给宝贝的小工具</h2></div>', unsafe_allow_html=True)
