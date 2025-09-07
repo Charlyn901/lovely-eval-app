@@ -219,6 +219,71 @@ with right:
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
+# ---------------- 心情中心（情话 / 安慰 / 推荐曾让她愉悦的记录） ----------------
+st.markdown("---")
+st.subheader("💬 心情中心（需要时来这里）")
+
+# 让用户选择当前心情（显示交互）
+mood_now = st.selectbox("你现在的心情是？", ["愉悦", "还行", "不愉悦"], index=1)
+# 可选：按情境筛选推荐
+ctx_filter = st.selectbox("按情境筛选推荐（可选）", ["全部", "在家", "通勤", "旅行", "工作", "约会", "其他"])
+
+# 读取情话/安慰池（如果你已实现 load_love_lines()）
+try:
+    love_data = load_love_lines()
+except Exception:
+    love_data = {"love": [], "comfort": []}
+
+if mood_now == "愉悦":
+    # 选一句情话展示
+    if love_data.get("love"):
+        st.success(random.choice(love_data["love"]))
+    else:
+        st.success("今天很美好，小狗在知道你很开心以后更美好了❤️")
+
+elif mood_now == "不愉悦":
+    # 推荐曾经标注为“愉悦”的记录
+    df_all = st.session_state.get("df", pd.DataFrame(columns=COLUMNS)).copy()
+    # 过滤出标注为愉悦的条目
+    past_good = df_all[df_all["愉悦度"] == "愉悦"]
+    if ctx_filter != "全部":
+        past_good = past_good[past_good["情境"] == ctx_filter]
+
+    if past_good.empty:
+        st.info("还没有标注为“愉悦”的记录，先添加几条我好给你推荐～")
+        # 同时也给一句安慰
+        if love_data.get("comfort"):
+            st.info(random.choice(love_data["comfort"]))
+        else:
+            st.info("小狗来抱抱你，可以吗？一切都会慢慢好起来。")
+    else:
+        st.write("下面是曾让你愉悦的记录（选一条回味/看图安慰）：")
+        names = past_good["名称"].fillna("").unique().tolist()
+        sel = st.selectbox("选择一条记录查看详情", ["不选"] + names)
+        if sel and sel != "不选":
+            chosen = past_good[past_good["名称"] == sel].iloc[-1]  # 取最近一条同名记录
+            st.markdown(f"**{chosen['名称']}** · {chosen['物品类型']}  ·  {chosen['情境']}")
+            if pd.notna(chosen.get("备注")) and chosen.get("备注"):
+                st.markdown(f"> {chosen['备注']}")
+            if pd.notna(chosen.get("链接")) and chosen.get("链接"):
+                st.markdown(f"[打开链接]({chosen['链接']})")
+            # 显示图片（如果有并且加载成功）
+            fn = chosen.get("照片文件名", "")
+            if fn and fn in st.session_state.get("images", {}):
+                try:
+                    st.image(st.session_state["images"][fn], width=320)
+                except Exception:
+                    pass
+            # 最后再给一句安慰话（或鼓励）
+            if love_data.get("comfort"):
+                st.info(random.choice(love_data["comfort"]))
+            else:
+                st.info("会好起来的，我永远在你身边。")
+
+else:
+    st.info("如果需要一句甜言或一些小建议，随时来这里告诉我～")
+# ---------------- 心情中心 结束 ----------------
+
 # ---------------- 心情连击 ----------------
 st.markdown("---")
 st.subheader("🔥 心情连击")
