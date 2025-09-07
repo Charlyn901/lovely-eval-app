@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from pathlib import Path
@@ -22,23 +21,25 @@ WISH_FILE = BASE_DIR / "wishes.json"
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-COLUMNS = ["时间","物品类型","名称","链接","情境",
-           "主评级1","次评级1","主评级2","次评级2",
-           "最终分","最终推荐","愉悦度","备注","照片文件名","记录ID"]
+COLUMNS = ["时间", "物品类型", "名称", "链接", "情境",
+           "主评级1", "次评级1", "主评级2", "次评级2",
+           "最终分", "最终推荐", "愉悦度", "备注", "照片文件名", "记录ID"]
 
-BASE_TYPES = ["外卖","生活用品","化妆品","数码","小事","其他"]
+BASE_TYPES = ["外卖", "生活用品", "化妆品", "数码", "小事", "其他"]
 
-SUB_MAP = {"S":["S+","S","S-"], "A":["A+","A","A-"], "B":["B+","B","B-"], "C":["C+","C","C-"]}
-SCORE_MAP = {"S+":5.0,"S":4.7,"S-":4.4,
-             "A+":4.1,"A":3.8,"A-":3.5,
-             "B+":3.0,"B":2.5,"B-":2.0,
-             "C+":1.5,"C":1.0,"C-":0.5}
+SUB_MAP = {"S": ["S+", "S", "S-"], "A": ["A+", "A", "A-"], "B": ["B+", "B", "B-"], "C": ["C+", "C", "C-"]}
+SCORE_MAP = {"S+": 5.0, "S": 4.7, "S-": 4.4,
+             "A+": 4.1, "A": 3.8, "A-": 3.5,
+             "B+": 3.0, "B": 2.5, "B-": 2.0,
+             "C+": 1.5, "C": 1.0, "C-": 0.5}
 
-DEFAULT_LOTTERY = {"再来一次":["再试一次","喝口水深呼吸"], "获得奖励":["亲亲一个","看电影一次","买杯奶茶"]}
+DEFAULT_LOTTERY = {"再来一次": ["再试一次", "喝口水深呼吸"], "获得奖励": ["亲亲一个", "看电影一次", "买杯奶茶"]}
+
 
 # ---------------- Helpers ----------------
-def now_str(offset_hours:int=8):
+def now_str(offset_hours: int = 8):
     return (datetime.utcnow() + timedelta(hours=offset_hours)).strftime("%Y-%m-%d %H:%M:%S")
+
 
 def load_data():
     if DATA_FILE.exists():
@@ -49,7 +50,7 @@ def load_data():
                     df[c] = ""
             if "记录ID" not in df.columns:
                 df["记录ID"] = ""
-            df["记录ID"] = df["记录ID"].apply(lambda x: x if isinstance(x,str) and x.strip() else uuid4().hex)
+            df["记录ID"] = df["记录ID"].apply(lambda x: x if isinstance(x, str) and x.strip() else uuid4().hex)
             return df[COLUMNS]
         except Exception as e:
             st.error(f"读取 {DATA_FILE} 出错：{e}")
@@ -57,26 +58,30 @@ def load_data():
     else:
         return pd.DataFrame(columns=COLUMNS)
 
+
 def save_data(df):
     try:
         df.to_excel(DATA_FILE, index=False, engine="openpyxl")
     except Exception as e:
         st.error(f"保存失败：{e}")
 
+
 def load_messages():
     if MSG_FILE.exists():
         try:
             return pd.read_csv(MSG_FILE, encoding="utf-8")
         except:
-            return pd.DataFrame(columns=["时间","留言"])
+            return pd.DataFrame(columns=["时间", "留言"])
     else:
-        return pd.DataFrame(columns=["时间","留言"])
+        return pd.DataFrame(columns=["时间", "留言"])
+
 
 def save_message(text, tz_offset=8):
     dfm = load_messages()
     new = {"时间": now_str(tz_offset), "留言": text}
     dfm = pd.concat([dfm, pd.DataFrame([new])], ignore_index=True)
     dfm.to_csv(MSG_FILE, index=False, encoding="utf-8-sig")
+
 
 def load_events():
     if EVENTS_FILE.exists():
@@ -87,9 +92,11 @@ def load_events():
             return {}
     return {}
 
+
 def save_events(events_dict):
     with open(EVENTS_FILE, "w", encoding="utf-8") as f:
         json.dump(events_dict, f, ensure_ascii=False, indent=2)
+
 
 def load_lottery():
     if LOTTERY_FILE.exists():
@@ -100,9 +107,11 @@ def load_lottery():
             return DEFAULT_LOTTERY.copy()
     return DEFAULT_LOTTERY.copy()
 
+
 def save_lottery(d):
     with open(LOTTERY_FILE, "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False, indent=2)
+
 
 def load_wishes():
     if WISH_FILE.exists():
@@ -113,9 +122,11 @@ def load_wishes():
             return []
     return []
 
+
 def save_wishes(wishes):
     with open(WISH_FILE, "w", encoding="utf-8") as f:
         json.dump(wishes, f, ensure_ascii=False, indent=2)
+
 
 def save_uploaded_image(uploaded_file):
     if uploaded_file is None:
@@ -126,11 +137,12 @@ def save_uploaded_image(uploaded_file):
         f.write(uploaded_file.getbuffer())
     return str(path.name)
 
+
 # ---------------- Session init ----------------
 if "df" not in st.session_state:
     st.session_state.df = load_data()
 if "images" not in st.session_state:
-    st.session_state.images = {p.name:str(p) for p in UPLOAD_DIR.glob("*")}
+    st.session_state.images = {p.name: str(p) for p in UPLOAD_DIR.glob("*")}
 if "tz_offset" not in st.session_state:
     st.session_state.tz_offset = 8
 if "theme" not in st.session_state:
@@ -143,18 +155,18 @@ with st.sidebar:
     w2 = round(1.0 - w1, 2)
     st.text(f"二次评级权重（次）自动为：{w2}")
     thr_rec = st.number_input("推荐阈值（>=）", value=4.2, step=0.1)
-    thr_ok  = st.number_input("还行阈值（>=）", value=3.0, step=0.1)
+    thr_ok = st.number_input("还行阈值（>=）", value=3.0, step=0.1)
     st.markdown("---")
     st.subheader("时间与主题")
     tz = st.number_input("时区偏移（相对 UTC，例如：北京时间=8）", value=st.session_state.tz_offset, step=1)
     st.session_state.tz_offset = int(tz)
-    theme = st.selectbox("🎨 主题", ["樱粉清新","夜间黑银","极光薄荷"])
+    theme = st.selectbox("🎨 主题", ["樱粉清新", "夜间黑银", "极光薄荷"])
     st.session_state.theme = theme
     st.markdown("---")
     st.subheader("重要事件（纪念日）")
     events = load_events()
     if events:
-        for k,v in events.items():
+        for k, v in events.items():
             st.write(f"- {k} → {v}")
     new_name = st.text_input("新增事件名称（例：恋爱纪念日）")
     new_date = st.date_input("日期（每年重复）", value=date.today())
@@ -167,7 +179,7 @@ with st.sidebar:
     st.subheader("数据导出/清理")
     if st.button("导出记录（Excel）"):
         if DATA_FILE.exists():
-            with open(DATA_FILE,"rb") as f:
+            with open(DATA_FILE, "rb") as f:
                 st.download_button("下载 data.xlsx", data=f, file_name="data.xlsx")
         else:
             st.warning("当前无 data.xlsx")
@@ -175,6 +187,7 @@ with st.sidebar:
         st.session_state.df = st.session_state.df.iloc[0:0]
         save_data(st.session_state.df)
         st.success("已清空")
+
 
 # ---------------- Theme CSS ----------------
 def get_theme_css(name):
@@ -207,11 +220,12 @@ def get_theme_css(name):
     </style>
     """
 
+
 st.markdown(get_theme_css(st.session_state.theme), unsafe_allow_html=True)
 st.markdown('<div class="header"><h2 style="margin:0">💖 我们的专属小站</h2></div>', unsafe_allow_html=True)
 
 # ---------------- Layout ----------------
-left, right = st.columns([1,1.25])
+left, right = st.columns([1, 1.25])
 
 with left:
     st.subheader("➕ 添加记录 / 随手记（小事）")
@@ -219,17 +233,17 @@ with left:
         itype = st.selectbox("类型", options=BASE_TYPES)
         name = st.text_input("名称 / 事件（例如：奶茶 / 一起散步 / 你今天笑）", max_chars=80)
         link = st.text_input("链接（可选）")
-        ctx = st.selectbox("情境", ["在家","通勤","旅行","工作","约会","其他"])
+        ctx = st.selectbox("情境", ["在家", "通勤", "旅行", "工作", "约会", "其他"])
         col1, col2 = st.columns(2)
         with col1:
-            main1 = st.selectbox("主评级 1", ["S","A","B","C"], index=0, key="m1")
+            main1 = st.selectbox("主评级 1", ["S", "A", "B", "C"], index=0, key="m1")
             sub1 = st.selectbox("细分 1", SUB_MAP[main1], key="s1")
         with col2:
-            main2 = st.selectbox("主评级 2", ["S","A","B","C"], index=0, key="m2")
+            main2 = st.selectbox("主评级 2", ["S", "A", "B", "C"], index=0, key="m2")
             sub2 = st.selectbox("细分 2", SUB_MAP[main2], key="s2")
-        mood = st.radio("愉悦度", ["愉悦","还行","不愉悦"], index=1)
+        mood = st.radio("愉悦度", ["愉悦", "还行", "不愉悦"], index=1)
         remark = st.text_area("备注 / 给对方的话（会保存）", max_chars=300)
-        photo = st.file_uploader("上传照片（可选）", type=["png","jpg","jpeg"])
+        photo = st.file_uploader("上传照片（可选）", type=["png", "jpg", "jpeg"])
         surprise = st.checkbox("显示小情话（保存后）", value=True)
         submitted = st.form_submit_button("添加并保存")
 
@@ -294,8 +308,8 @@ with right:
     base_type_set = set(BASE_TYPES)
     type_options = ["全部"] + sorted(list(base_type_set.union(set(df_view["物品类型"].dropna().unique().tolist()))))
     f_type = st.selectbox("按类型", options=type_options, index=0)
-    f_rec = st.selectbox("按最终推荐", options=["全部","推荐","还行","不推荐"], index=0)
-    f_mood = st.selectbox("按愉悦度", options=["全部","愉悦","还行","不愉悦"], index=0)
+    f_rec = st.selectbox("按最终推荐", options=["全部", "推荐", "还行", "不推荐"], index=0)
+    f_mood = st.selectbox("按愉悦度", options=["全部", "愉悦", "还行", "不愉悦"], index=0)
     kw = st.text_input("关键字搜索（名称/备注/链接/情境）", "")
 
     if f_type != "全部":
@@ -306,10 +320,10 @@ with right:
         df_view = df_view[df_view["愉悦度"] == f_mood]
     if kw.strip():
         mask = (
-            df_view["名称"].fillna("").str.contains(kw, case=False) |
-            df_view["备注"].fillna("").str.contains(kw, case=False) |
-            df_view["链接"].fillna("").str.contains(kw, case=False) |
-            df_view["情境"].fillna("").str.contains(kw, case=False)
+                df_view["名称"].fillna("").str.contains(kw, case=False) |
+                df_view["备注"].fillna("").str.contains(kw, case=False) |
+                df_view["链接"].fillna("").str.contains(kw, case=False) |
+                df_view["情境"].fillna("").str.contains(kw, case=False)
         )
         df_view = df_view[mask]
 
@@ -319,10 +333,12 @@ with right:
     preview = df_view.tail(6).iloc[::-1]
     for _, row in preview.iterrows():
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        c1, c2 = st.columns([3,1])
+        c1, c2 = st.columns([3, 1])
         with c1:
             st.markdown(f"**{row['名称']}**  ·  {row['物品类型']}  ·  {row['情境']}")
-            st.markdown(f"<div class='small-muted'>评级：{row['主评级1']}({row['次评级1']})  /  {row['主评级2']}({row['次评级2']})  →  <strong>{row['最终分']}</strong>  · 推荐：<strong>{row['最终推荐']}</strong></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='small-muted'>评级：{row['主评级1']}({row['次评级1']})  /  {row['主评级2']}({row[
+                '次评级2']})  →  <strong>{row['最终分']}</strong>  · 推荐：<strong>{row['最终推荐']}</strong></div>",
+                        unsafe_allow_html=True)
             if row['链接']:
                 st.markdown(f"[查看链接]({row['链接']})")
             if row['备注']:
@@ -336,7 +352,7 @@ with right:
             else:
                 st.write("")
 
-        rid = row.get("记录ID","")
+        rid = row.get("记录ID", "")
         if rid:
             if st.button("🗑 删除该记录", key=f"del_{rid}"):
                 df_all = st.session_state.df
@@ -348,8 +364,8 @@ with right:
 # ---------------- 心情中心 ----------------
 st.markdown("---")
 st.subheader("💌 心情中心")
-mood_today = st.selectbox("今天心情如何？", ["愉悦","还行","不愉悦"], index=1)
-ctx_filter = st.selectbox("按情境筛选安慰（可选）", [""] + ["在家","通勤","旅行","工作","约会","其他"])
+mood_today = st.selectbox("今天心情如何？", ["愉悦", "还行", "不愉悦"], index=1)
+ctx_filter = st.selectbox("按情境筛选安慰（可选）", [""] + ["在家", "通勤", "旅行", "工作", "约会", "其他"])
 if mood_today == "不愉悦":
     past_good = st.session_state.df[st.session_state.df["愉悦度"] == "愉悦"]
     if ctx_filter:
@@ -359,8 +375,8 @@ if mood_today == "不愉悦":
         sel = st.selectbox("这些曾经让你愉悦过：", names)
         if sel:
             chosen = past_good[past_good["名称"] == sel].iloc[-1]
-            st.success(f"想想 {sel} 的美好吧～ 备注：{chosen.get('备注','')}")
-            fn = chosen.get("照片文件名","")
+            st.success(f"想想 {sel} 的美好吧～ 备注：{chosen.get('备注', '')}")
+            fn = chosen.get("照片文件名", "")
             if fn and fn in st.session_state.images:
                 st.image(st.session_state.images[fn], width=300)
     else:
@@ -396,9 +412,9 @@ else:
     rec_counts = df["最终推荐"].value_counts()
     st.write("推荐分布：")
     st.bar_chart(rec_counts)
-    top_happy = df[df["愉悦度"]=="愉悦"]["名称"].value_counts().head(10)
+    top_happy = df[df["愉悦度"] == "愉悦"]["名称"].value_counts().head(10)
     st.write("她特别喜欢（愉悦次数最多的物品）:")
-    st.table(top_happy.reset_index().rename(columns={"index":"名称","名称":"次数"}))
+    st.table(top_happy.reset_index().rename(columns={"index": "名称", "名称": "次数"}))
 
 # 心情连击
 st.markdown("---")
@@ -436,7 +452,7 @@ else:
 st.markdown("---")
 st.subheader("🎲 抽奖中心")
 lot = load_lottery()
-tab1, tab2, tab3 = st.tabs(["再来一次","获得奖励","管理奖池"])
+tab1, tab2, tab3 = st.tabs(["再来一次", "获得奖励", "管理奖池"])
 with tab1:
     st.write("点按钮随机一条“再来一次”的建议")
     if st.button("🎯 抽一次（再来一次）"):
@@ -445,7 +461,7 @@ with tab1:
 with tab2:
     st.write("点按钮随机一条“获得奖励”")
     if st.button("🎁 抽一次（获得奖励）"):
-        choice = random.choice(lot.get("获得奖励", ["亲亲一下","看电影","奶茶一杯"]))
+        choice = random.choice(lot.get("获得奖励", ["亲亲一下", "看电影", "奶茶一杯"]))
         st.success(f"结果：{choice}")
 with tab3:
     st.write("管理奖池（每行一个条目）")
@@ -477,7 +493,7 @@ if wishes:
     done_count = sum(1 for w in wishes if w.get("done"))
     st.write(f"完成率：{done_count}/{len(wishes)}")
     for w in wishes:
-        col1, col2 = st.columns([6,1])
+        col1, col2 = st.columns([6, 1])
         with col1:
             st.write(("✅ " if w.get("done") else "🔲 ") + w.get("text"))
         with col2:
@@ -490,7 +506,7 @@ else:
 
 # ---------------- Footer: 导出 / 清理 ----------------
 st.markdown("---")
-c1, c2 = st.columns([1,1])
+c1, c2 = st.columns([1, 1])
 with c1:
     csv = df.to_csv(index=False, encoding="utf-8-sig")
     st.download_button("📥 下载记录 CSV", data=csv, file_name="评价记录.csv", mime="text/csv")
