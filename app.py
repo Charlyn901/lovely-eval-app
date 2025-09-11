@@ -189,13 +189,12 @@ if name.strip():
             st.markdown("将把此次输入作为**二次评级**更新最近一条同名记录。")
             main2 = st.selectbox("主评级2（用于更新）", ["S", "A", "B", "C"], key="main2")
             sub2 = st.selectbox("细分2（用于更新）", SUB_MAP[main2], key="sub2")
+with st.form("add_form", clear_on_submit=True):
+    mood = st.radio("愉悦度", ["愉悦", "还行", "不愉悦"], index=1, key="mood_input")
+    remark = st.text_area("备注", key="remark_input")
+    photo = st.file_uploader("上传照片", type=["png", "jpg", "jpeg"], key="photo_input")
 
-mood = st.radio("愉悦度", ["愉悦", "还行", "不愉悦"], index=1, key="mood_input")
-remark = st.text_area("备注", key="remark_input")
-photo = st.file_uploader("上传照片", type=["png", "jpg", "jpeg"], key="photo_input")
-
-submitted = st.form_submit_button("保存")
-
+    submitted = st.form_submit_button("保存")  # ← 现在在 form 内
 if submitted:
     if not name.strip():
         st.warning("请输入名称！")
@@ -494,7 +493,7 @@ if not msgs_view.empty:
     for _, r in msgs_view.iloc[::-1].head(limit).iterrows():
         st.markdown(f"""
         <div style='padding:8px;margin:4px 0;border-bottom:1px solid #ddd;'>
-            <b>{r['时间']}</b><br>{r['留言']}
+            <b.>{r['时间']}</b><br>{r['留言']}
         </div>
         """, unsafe_allow_html=True)
 else:
