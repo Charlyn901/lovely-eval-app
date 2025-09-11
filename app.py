@@ -314,8 +314,6 @@ if submitted:
 
 with right:
     st.subheader("📚 记录总览")
-    with right:
-    st.subheader("📚 记录总览")
     df_view = st.session_state.df.copy()
 
     # 用户筛选
