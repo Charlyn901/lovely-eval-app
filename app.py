@@ -317,7 +317,7 @@ with right:
     df_view = st.session_state.df.copy()
 
     # 用户筛选
-    current_user = st.selectbox("查看哪个用户的数据", ["我","她","全部"], index=2)
+    current_user = st.selectbox("查看哪个用户的数据", ["uuu","ooo","全部"], index=2)
     if current_user != "全部":
         df_view = df_view[df_view["用户"] == current_user]
 
