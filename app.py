@@ -314,12 +314,15 @@ if submitted:
 
 with right:
     st.subheader("📚 记录总览")
-with right:
+    with right:
     st.subheader("📚 记录总览")
     df_view = st.session_state.df.copy()
 
-    current_user=st.selectbox("查看哪个用户的数据",["uuu","ooo","全部"],index=2)
-         df_view=df_viewdf_view["用户"]==[current_user]
+    # 用户筛选
+    current_user = st.selectbox("查看哪个用户的数据", ["我","她","全部"], index=2)
+    if current_user != "全部":
+        df_view = df_view[df_view["用户"] == current_user]
+
     # 筛选类型 + 关键字搜索
     f_type = st.selectbox("筛选类型", ["全部"] + BASE_TYPES)
     if f_type != "全部":
@@ -342,11 +345,8 @@ with right:
 
     if st.button("🗑 删除选中记录"):
         if selected_ids:
-            # 解析 ID 部分
             ids = [x.split("|")[0] for x in selected_ids]
-            st.session_state.df = st.session_state.df[
-                ~st.session_state.df["记录ID"].isin(ids)
-            ]
+            st.session_state.df = st.session_state.df[~st.session_state.df["记录ID"].isin(ids)]
             save_data(st.session_state.df)
             st.success(f"已删除 {len(ids)} 条记录。")
             st.rerun()
@@ -355,15 +355,6 @@ with right:
 
     st.write("—— 最近 5 条记录预览 ——")
     st.dataframe(df_view.tail(5))
-        st.write(f"**{row['名称']}** · {row['物品类型']} · {row['最终推荐']} ({row['愉悦度']})")
-        if row["备注"]: st.write(row["备注"])
-        rid=row["记录ID"]
-        if st.button("🗑 删除", key=f"del_{rid}"):
-            st.session_state.df = st.session_state.df[st.session_state.df["记录ID"]!=rid]
-            save_data(st.session_state.df)
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
 # ---------------- 心情中心（情话 / 安慰 / 推荐曾让她愉悦的记录） ----------------
 st.markdown("---")
 st.subheader("💬 心情中心（需要时来这里）")
