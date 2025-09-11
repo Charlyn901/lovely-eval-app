@@ -145,7 +145,7 @@ left, right = st.columns([1,1.25])
 with left:
     st.subheader("➕ 添加记录")
     with st.form("add_form", clear_on_submit=True):
-        user=st.sslectbox("选择用户",["uuu","ooo"],index=0)
+        user=st.selectbox("选择用户",["uuu","ooo"],index=0)
         itype = st.selectbox("类型", options=BASE_TYPES)
         name = st.text_input("名称/事件", key="input_name")
         link = st.text_input("链接（可选）", key="input_link")
