@@ -154,11 +154,17 @@ with left:
         link = st.text_input("链接（可选）", key="input_link")
         ctx = st.selectbox("情境", ["在家","通勤","旅行","工作","约会","其他"], key="input_ctx")
 
-        # 主评级 + 次评级 (动态)
-        main1 = st.selectbox("主评级1", ["S","A","B","C"], key="main1")
-        sub1_options=SUB_MAP.get(st.session_state.main1,["S+","S","S-"])
-        sub1 = st.selectbox("细分1", sub1_options, key="sub1")
+        # 主评级
+main1 = st.selectbox("主评级1", ["S","A","B","C"], key="main1")
 
+# 根据 main1 动态生成细分选项
+sub1_options = SUB_MAP.get(st.session_state.main1, ["S+","S","S-"])
+sub1_index = 0
+# 如果 sub1 在 session_state 中存在且属于新选项，保留之前的选项
+if "sub1" in st.session_state and st.session_state.sub1 in sub1_options:
+    sub1_index = sub1_options.index(st.session_state.sub1)
+
+sub1 = st.selectbox("细分1", sub1_options, index=sub1_index, key="sub1")
         # 检查是否存在历史同名记录
         update_mode = False
         existing_latest_idx = None
