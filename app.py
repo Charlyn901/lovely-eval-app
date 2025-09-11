@@ -18,7 +18,7 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 COLUMNS = [
-    "时间","物品类型","名称","链接","情境",
+    "时间","用户","物品类型","名称","链接","情境",
     "主评级1","次评级1","主评级2","次评级2",
     "最终分","最终推荐","愉悦度","备注","照片文件名","记录ID"
 ]
@@ -141,22 +141,135 @@ st.title("💖 我们的专属小站")
 # ---------------- 主页面 ----------------
 left, right = st.columns([1,1.25])
 
+# ---------------- 左侧：添加记录（含“仅当同名记录存在时才触发二次评级”） ----------------
 with left:
     st.subheader("➕ 添加记录")
     with st.form("add_form", clear_on_submit=True):
+        user=st.sslectbox("选择用户",["uuu","ooo"],index=0)
         itype = st.selectbox("类型", options=BASE_TYPES)
-        name = st.text_input("名称/事件")
-        link = st.text_input("链接（可选）")
-        ctx = st.selectbox("情境", ["在家","通勤","旅行","工作","约会","其他"])
-        main1 = st.selectbox("主评级1", ["S","A","B","C"])
-        sub1 = st.selectbox("细分1", SUB_MAP[main1])
-        main2 = st.selectbox("主评级2", ["S","A","B","C"])
-        sub2 = st.selectbox("细分2", SUB_MAP[main2])
-        mood = st.radio("愉悦度", ["愉悦","还行","不愉悦"])
-        remark = st.text_area("备注")
-        photo = st.file_uploader("上传照片", type=["png","jpg","jpeg"])
+        name = st.text_input("名称/事件", key="input_name")
+        link = st.text_input("链接（可选）", key="input_link")
+        ctx = st.selectbox("情境", ["在家", "通勤", "旅行", "工作", "约会", "其他"], key="input_ctx")
+
+        # 主评级与细分（始终显示主评级1 与 细分1）
+        main1 = st.selectbox("主评级1", ["S", "A", "B", "C"], key="main1")
+        sub1 = st.selectbox("细分1", SUB_MAP[main1], key="sub1")
+
+        # 检查是否存在历史同名记录（不区分大小写）
+        update_mode = False
+        existing_latest_idx = None
+        if name.strip():
+            df_all = st.session_state.get("df", pd.DataFrame(columns=COLUMNS))
+            mask = df_all["名称"].fillna("").str.lower() == name.strip().lower()
+            if mask.any():
+                existing = df_all[mask].copy()
+                # 解析时间并取最近一条
+                existing["__time_parsed"] = pd.to_datetime(existing["时间"], errors="coerce")
+                existing = existing.sort_values("__time_parsed")
+                latest_row = existing.iloc[-1]
+                existing_count = existing.shape[0]
+                st.info(f"检测到历史记录（{existing_count} 条）与该名称匹配。")
+                op = st.radio("操作选项", ("创建新条目", "把这次作为二次评级，更新最近一条记录"), index=0, key="op_mode")
+                if op == "把这次作为二次评级，更新最近一条记录":
+                    update_mode = True
+                    existing_latest_idx = latest_row.name  # 这是原 DataFrame 的索引
+                    st.markdown("将把此次输入作为**二次评级**更新最近一条同名记录。")
+                    # 只在更新模式下显示主/细分2（用于更新历史记录）
+                    main2 = st.selectbox("主评级2（用于更新）", ["S", "A", "B", "C"], key="main2")
+                    sub2 = st.selectbox("细分2（用于更新）", SUB_MAP[main2], key="sub2")
+            else:
+                # 没有同名历史 —— 不显示二次评级（按你的要求）
+                pass
+
+        # 其余字段
+        mood = st.radio("愉悦度", ["愉悦", "还行", "不愉悦"], index=1, key="mood_input")
+        remark = st.text_area("备注", key="remark_input")
+        photo = st.file_uploader("上传照片", type=["png", "jpg", "jpeg"], key="photo_input")
+
         submitted = st.form_submit_button("保存")
+
+    # 提交处理逻辑
     if submitted:
+        if not name.strip():
+            st.warning("请输入名称！")
+        else:
+            # 更新已有记录（把这次作为二次评级）
+            if update_mode and existing_latest_idx is not None:
+                df_all = st.session_state.df
+                # 读取最近一条记录的次评级1（作为 v1）
+                prev_sub1 = df_all.at[existing_latest_idx, "次评级1"]
+                v1 = SCORE_MAP.get(prev_sub1)
+                v2 = SCORE_MAP.get(sub2)
+                if v1 is None or v2 is None:
+                    st.error("读取历史评级或当前评级失败，无法计算分数。")
+                else:
+                    final_score = round(w1 * v1 + w2 * v2, 3)
+                    if final_score >= 4.2:
+                        rec = "推荐"
+                    elif final_score >= 3.0:
+                        rec = "还行"
+                    else:
+                        rec = "不推荐"
+                    # 更新历史记录对应字段
+                    df_all.at[existing_latest_idx, "主评级2"] = main2
+                    df_all.at[existing_latest_idx,"用户"]=user
+                    df_all.at[existing_latest_idx, "次评级2"] = sub2
+                    df_all.at[existing_latest_idx, "最终分"] = final_score
+                    df_all.at[existing_latest_idx, "最终推荐"] = rec
+                    df_all.at[existing_latest_idx, "时间"] = now_str()
+                    # 如果上传了图片，写入并更新照片文件名
+                    if photo:
+                        fn = save_uploaded_image(photo)
+                        df_all.at[existing_latest_idx, "照片文件名"] = fn
+                    save_data(df_all)
+                    st.session_state.df = df_all
+                    st.success("已把此次作为二次评级并更新最近一条记录。")
+                    st.rerun()
+
+            # 新增一条记录（只有主评级1/细分1）
+            else:
+                v1 = SCORE_MAP.get(sub1)
+                if v1 is None:
+                    st.error("评级解析失败，保存被中止。")
+                else:
+                    # 如果只有一次评级，我们把最终分设为 v1（更直观），等待将来可能的二次评级合并
+                    final_score = round(v1, 3)
+                    if final_score >= 4.2:
+                        rec = "推荐"
+                    elif final_score >= 3.0:
+                        rec = "还行"
+                    else:
+                        rec = "不推荐"
+                    photo_name = save_uploaded_image(photo) if photo else ""
+                    new_row = {
+                        "时间": now_str(),
+                        "用户":user,
+                        "物品类型": itype,
+                        "名称": name,
+                        "链接": link,
+                        "情境": ctx,
+                        "主评级1": main1, "次评级1": sub1,
+                        "主评级2": "", "次评级2": "",
+                        "最终分": final_score, "最终推荐": rec,
+                        "愉悦度": mood, "备注": remark,
+                        "照片文件名": photo_name,
+                        "记录ID": uuid4().hex
+                    }
+                    st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
+                    save_data(st.session_state.df)
+                    st.success("已保存新记录！")
+                    # 保存时显示情话或安慰（沿用原逻辑）
+                    love_data = load_love_lines()
+                    if mood == "不愉悦":
+                        if love_data.get("comfort"):
+                            st.info(random.choice(love_data["comfort"]))
+                        else:
+                            st.info("别难过，我在你身边。")
+                    else:
+                        if love_data.get("love"):
+                            st.info(random.choice(love_data["love"]))
+                        else:
+                            st.info("你是我的小确幸。")    if submitted:
         v1, v2 = SCORE_MAP[sub1], SCORE_MAP[sub2]
         final_score = round(w1*v1+w2*v2,3)
         if final_score>=4.2: rec="推荐"
@@ -200,16 +313,48 @@ with left:
 
 with right:
     st.subheader("📚 记录总览")
+ with right:
+    st.subheader("📚 记录总览")
     df_view = st.session_state.df.copy()
-    f_type = st.selectbox("筛选类型", ["全部"]+BASE_TYPES)
-    if f_type!="全部":
-        df_view = df_view[df_view["物品类型"]==f_type]
+
+    current_user=st.selectbox("查看哪个用户的数据",["uuu","ooo","全部"],index=2)
+    if current_user !="全部"
+         df_view=df_viewdf_view["用户"]==current_user]
+    # 筛选类型 + 关键字搜索
+    f_type = st.selectbox("筛选类型", ["全部"] + BASE_TYPES)
+    if f_type != "全部":
+        df_view = df_view[df_view["物品类型"] == f_type]
+
     kw = st.text_input("关键字搜索")
     if kw.strip():
-        df_view = df_view[df_view["名称"].str.contains(kw,na=False)]
-    st.dataframe(df_view)
-    for _, row in df_view.tail(5).iterrows():
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+        df_view = df_view[df_view["名称"].str.contains(kw, na=False)]
+
+    # 多选删除：显示记录并允许勾选
+    st.write("选择要删除的记录（可多选）：")
+    selected_ids = st.multiselect(
+        "多选记录（显示 名称+时间）",
+        options=[
+            f"{row['记录ID']}|{row['名称']}|{row['时间']}"
+            for _, row in df_view.iterrows()
+        ],
+        format_func=lambda x: x.split("|")[1] + "（" + x.split("|")[2] + "）"
+    )
+
+    if st.button("🗑 删除选中记录"):
+        if selected_ids:
+            # 解析 ID 部分
+            ids = [x.split("|")[0] for x in selected_ids]
+            st.session_state.df = st.session_state.df[
+                ~st.session_state.df["记录ID"].isin(ids)
+            ]
+            save_data(st.session_state.df)
+            st.success(f"已删除 {len(ids)} 条记录。")
+            st.rerun()
+        else:
+            st.warning("请先选择至少一条记录再删除。")
+
+    st.write("—— 最近 5 条记录预览 ——")
+    st.dataframe(df_view.tail(5))
         st.write(f"**{row['名称']}** · {row['物品类型']} · {row['最终推荐']} ({row['愉悦度']})")
         if row["备注"]: st.write(row["备注"])
         rid=row["记录ID"]
@@ -338,15 +483,68 @@ for w in wishes:
             save_wishes(wishes)
             st.rerun()
 
-# ---------------- 留言板 ----------------
+# ---------------- 留言板（增强版，可浏览/搜索） ----------------
 st.markdown("---")
 st.subheader("📝 留言板")
+
+# 输入与保存留言
 msg_text = st.text_area("写下想说的话")
 if st.button("发送留言"):
     if msg_text.strip():
         save_message(msg_text.strip())
         st.success("已保存")
         st.rerun()
+
+# 读取历史留言
 msgs = load_messages()
-for _, r in msgs.iloc[::-1].iterrows():
-    st.write(f"> {r['时间']} — {r['留言']}")
+
+# 浏览功能：按关键字搜索 + 选择显示最近多少条
+colA, colB = st.columns([1,1])
+with colA:
+    kw_msg = st.text_input("搜索留言关键字", "")
+with colB:
+    limit = st.selectbox("显示最近多少条", [5,10,20,50,100], index=1)
+
+if kw_msg.strip():
+    msgs_view = msgs[msgs["留言"].str.contains(kw_msg, na=False)]
+else:
+    msgs_view = msgs
+
+if not msgs_view.empty:
+    st.write(f"共 {len(msgs_view)} 条留言，显示最近 {limit} 条：")
+    # 倒序显示最近 limit 条
+    for _, r in msgs_view.iloc[::-1].head(limit).iterrows():
+        st.markdown(f"""
+        <div style='padding:8px;margin:4px 0;border-bottom:1px solid #ddd;'>
+            <b>{r['时间']}</b><br>{r['留言']}
+        </div>
+        """, unsafe_allow_html=True)
+else:
+    st.info("暂无留言")
+# ---------------- 全局美化CSS ----------------
+st.markdown("""
+<style>
+/* 统一按钮风格 */
+button[data-baseweb="button"] {
+    background: linear-gradient(135deg, #f78ca0 0%, #f9748f 100%);
+    color: white !important;
+    border-radius: 8px;
+    border: none;
+    padding: 0.4rem 0.9rem;
+    font-weight: 600;
+    transition: 0.2s;
+}
+button[data-baseweb="button"]:hover {
+    background: linear-gradient(135deg, #f9748f 0%, #f78ca0 100%);
+    transform: scale(1.03);
+}
+/* 卡片风格 */
+.card {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    padding: 10px;
+    background: #ffffffcc;
+    margin-bottom: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
