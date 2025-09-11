@@ -167,8 +167,8 @@ with left:
         link = st.text_input("链接（可选）", key="input_link")
         ctx = st.selectbox("情境", ["在家", "通勤", "旅行", "工作", "约会", "其他"], key="input_ctx")
 
-      main1 = st.selectbox("主评级1", ["S","A","B","C"], key="main1")
-      sub1 = st.selectbox("细分1", SUB_MAP[main1], key="sub1")
+    main1 = st.selectbox("主评级1", ["S", "A", "B", "C"], key="main1")
+    sub1 = st.selectbox("细分1", SUB_MAP[main1], key="sub1")
 
 # 检查是否存在历史同名记录
 update_mode = False
