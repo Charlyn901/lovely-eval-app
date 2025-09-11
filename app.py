@@ -119,33 +119,7 @@ with st.sidebar:
     w2 = round(1.0 - w1, 2)
     st.text(f"次评级权重：{w2}")
 
-    # 主题切换
-    theme = st.selectbox("主题切换", ["樱粉清新", "夜间黑银", "极光薄荷"])
-    st.session_state.theme = theme
-
-
-# ---------------- Theme CSS ----------------
-def get_theme_css(name):
-    if name == "樱粉清新":
-        return """
-        <style>
-        body, .stApp {background:#fff0f5;}
-        .card{border-radius:12px; padding:10px; background:#fff7fb; margin-bottom:10px;}
-        </style>
-        """
-    if name == "夜间黑银":
-        return """
-        <style>
-        body, .stApp {background:#0f1113; color:#eaeaea;}
-        .card{border-radius:12px; padding:10px; background:#1a1a1d; margin-bottom:10px;}
-        </style>
-        """
-    return """
-    <style>
-    body, .stApp {background:#e0fff8;}
-    .card{border-radius:12px; padding:10px; background:#f3fdff; margin-bottom:10px;}
-    </style>
-    """
+    
 
 
 st.markdown(get_theme_css(st.session_state.theme), unsafe_allow_html=True)
