@@ -319,7 +319,6 @@ with right:
     df_view = st.session_state.df.copy()
 
     current_user=st.selectbox("查看哪个用户的数据",["uuu","ooo","全部"],index=2)
-    if current_user !="全部"
          df_view=df_viewdf_view["用户"]==[current_user]
     # 筛选类型 + 关键字搜索
     f_type = st.selectbox("筛选类型", ["全部"] + BASE_TYPES)
