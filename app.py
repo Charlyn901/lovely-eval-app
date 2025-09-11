@@ -146,7 +146,7 @@ with left:
     st.subheader("➕ 添加记录")
     with st.form("add_form", clear_on_submit=True):
         # 选择用户
-        user = st.selectbox("选择用户", ["我","她"], index=0)
+        user = st.selectbox("选择用户", ["uuu","ooo"], index=0)
 
         # 物品/事件信息
         itype = st.selectbox("类型", options=BASE_TYPES)
