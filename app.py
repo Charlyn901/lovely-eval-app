@@ -31,7 +31,7 @@ SCORE_MAP = {"S+":5.0,"S":4.7,"S-":4.4,
              "B+":3.0,"B":2.5,"B-":2.0,
              "C+":1.5,"C":1.0,"C-":0.5}
 
-DEFAULT_LOTTERY = {"再来一次":["再试一次","喝口水深呼吸"],"获得奖励":["亲亲一个","看电影一次","买杯奶茶"]}
+DEFAULT_LOTTERY = {"再来一次":["再试一次","喝口水深呼吸"],"获得奖励":["亲亲一个","抱抱~","买杯奶茶"，"牵手手！"]}
 
 # ---------------- Helpers ----------------
 def now_str():
@@ -156,7 +156,8 @@ with left:
 
         # 主评级 + 次评级 (动态)
         main1 = st.selectbox("主评级1", ["S","A","B","C"], key="main1")
-        sub1 = st.selectbox("细分1", SUB_MAP[main1], key="sub1")
+        sub1_options=SUB_MAP.get(st.session_state.main,["S+","S","S-"])
+        sub1 = st.selectbox("细分1", sub1_options, key="sub1")
 
         # 检查是否存在历史同名记录
         update_mode = False
