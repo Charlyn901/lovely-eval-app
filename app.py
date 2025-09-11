@@ -18,25 +18,27 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 COLUMNS = [
-    "时间","用户","物品类型","名称","链接","情境",
-    "主评级1","次评级1","主评级2","次评级2",
-    "最终分","最终推荐","愉悦度","备注","照片文件名","记录ID"
+    "时间", "用户", "物品类型", "名称", "链接", "情境",
+    "主评级1", "次评级1", "主评级2", "次评级2",
+    "最终分", "最终推荐", "愉悦度", "备注", "照片文件名", "记录ID"
 ]
 
-BASE_TYPES = ["外卖","生活用品","化妆品","数码","小事","其他"]
+BASE_TYPES = ["外卖", "生活用品", "化妆品", "数码", "小事", "其他"]
 
-SUB_MAP = {"S":["S+","S","S-"],"A":["A+","A","A-"],"B":["B+","B","B-"],"C":["C+","C","C-"]}
-SCORE_MAP = {"S+":5.0,"S":4.7,"S-":4.4,
-             "A+":4.1,"A":3.8,"A-":3.5,
-             "B+":3.0,"B":2.5,"B-":2.0,
-             "C+":1.5,"C":1.0,"C-":0.5}
+SUB_MAP = {"S": ["S+", "S", "S-"], "A": ["A+", "A", "A-"], "B": ["B+", "B", "B-"], "C": ["C+", "C", "C-"]}
+SCORE_MAP = {"S+": 5.0, "S": 4.7, "S-": 4.4,
+             "A+": 4.1, "A": 3.8, "A-": 3.5,
+             "B+": 3.0, "B": 2.5, "B-": 2.0,
+             "C+": 1.5, "C": 1.0, "C-": 0.5}
 
-DEFAULT_LOTTERY = {"再来一次":["再试一次","喝口水深呼吸"],"获得奖励":["亲亲一个","抱抱~","买杯奶茶","牵手手！"]}
+DEFAULT_LOTTERY = {"再来一次": ["再试一次", "喝口水深呼吸"], "获得奖励": ["亲亲一个", "抱抱~", "买杯奶茶", "牵手手！"]}
+
 
 # ---------------- Helpers ----------------
 def now_str():
     tz = pytz.timezone("Asia/Shanghai")
     return datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+
 
 def load_data():
     if Path(DATA_FILE).exists():
@@ -46,18 +48,21 @@ def load_data():
                 df[c] = ""
         if "记录ID" not in df.columns:
             df["记录ID"] = ""
-        df["记录ID"] = df["记录ID"].apply(lambda x: x if isinstance(x,str) and x.strip() else uuid4().hex)
+        df["记录ID"] = df["记录ID"].apply(lambda x: x if isinstance(x, str) and x.strip() else uuid4().hex)
         return df[COLUMNS]
     else:
         return pd.DataFrame(columns=COLUMNS)
 
+
 def save_data(df):
     df.to_csv(DATA_FILE, index=False, encoding="utf-8-sig")
+
 
 def load_messages():
     if Path(MSG_FILE).exists():
         return pd.read_csv(MSG_FILE, encoding="utf-8")
-    return pd.DataFrame(columns=["时间","留言"])
+    return pd.DataFrame(columns=["时间", "留言"])
+
 
 def save_message(text):
     dfm = load_messages()
@@ -65,25 +70,30 @@ def save_message(text):
     dfm = pd.concat([dfm, pd.DataFrame([new])], ignore_index=True)
     dfm.to_csv(MSG_FILE, index=False, encoding="utf-8-sig")
 
+
 def load_lottery():
     if Path(LOTTERY_FILE).exists():
-        with open(LOTTERY_FILE,"r",encoding="utf-8") as f:
+        with open(LOTTERY_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return DEFAULT_LOTTERY.copy()
 
+
 def save_lottery(d):
-    with open(LOTTERY_FILE,"w",encoding="utf-8") as f:
-        json.dump(d,f,ensure_ascii=False,indent=2)
+    with open(LOTTERY_FILE, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=2)
+
 
 def load_wishes():
     if Path(WISH_FILE).exists():
-        with open(WISH_FILE,"r",encoding="utf-8") as f:
+        with open(WISH_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
+
 def save_wishes(wishes):
-    with open(WISH_FILE,"w",encoding="utf-8") as f:
-        json.dump(wishes,f,ensure_ascii=False,indent=2)
+    with open(WISH_FILE, "w", encoding="utf-8") as f:
+        json.dump(wishes, f, ensure_ascii=False, indent=2)
+
 
 def save_uploaded_image(uploaded_file):
     filename = f"{uuid4().hex}{Path(uploaded_file.name).suffix}"
@@ -92,11 +102,12 @@ def save_uploaded_image(uploaded_file):
         f.write(uploaded_file.getbuffer())
     return str(path.name)
 
+
 # ---------------- Session init ----------------
 if "df" not in st.session_state:
     st.session_state.df = load_data()
 if "images" not in st.session_state:
-    st.session_state.images = {p.name:str(p) for p in UPLOAD_DIR.glob("*")}
+    st.session_state.images = {p.name: str(p) for p in UPLOAD_DIR.glob("*")}
 if "theme" not in st.session_state:
     st.session_state.theme = "樱粉清新"
 
@@ -109,8 +120,9 @@ with st.sidebar:
     st.text(f"次评级权重：{w2}")
 
     # 主题切换
-    theme = st.selectbox("主题切换", ["樱粉清新","夜间黑银","极光薄荷"])
+    theme = st.selectbox("主题切换", ["樱粉清新", "夜间黑银", "极光薄荷"])
     st.session_state.theme = theme
+
 
 # ---------------- Theme CSS ----------------
 def get_theme_css(name):
@@ -135,167 +147,171 @@ def get_theme_css(name):
     </style>
     """
 
+
 st.markdown(get_theme_css(st.session_state.theme), unsafe_allow_html=True)
 st.title("💖 我们的专属小站")
 
 # ---------------- 主页面 ----------------
-left, right = st.columns([1,1.25])
+left, right = st.columns([1, 1.25])
 
 # ---------------- 左侧：添加记录（含“仅当同名记录存在时才触发二次评级”） ----------------
 with left:
     st.subheader("➕ 添加记录")
     with st.form("add_form", clear_on_submit=True):
         # 选择用户
-        user = st.selectbox("选择用户", ["uuu","ooo"], index=0)
+        user = st.selectbox("选择用户", ["uuu", "ooo"], index=0)
 
         # 物品/事件信息
         itype = st.selectbox("类型", options=BASE_TYPES)
         name = st.text_input("名称/事件", key="input_name")
         link = st.text_input("链接（可选）", key="input_link")
-        ctx = st.selectbox("情境", ["在家","通勤","旅行","工作","约会","其他"], key="input_ctx")
+        ctx = st.selectbox("情境", ["在家", "通勤", "旅行", "工作", "约会", "其他"], key="input_ctx")
 
         # 主评级
-main1 = st.selectbox("主评级1", ["S","A","B","C"], key="main1")
+main1 = st.selectbox("主评级1", ["S", "A", "B", "C"], key="main1")
 
 # 根据 main1 动态生成细分选项
-sub1_options = SUB_MAP.get(st.session_state.main1, ["S+","S","S-"])
+sub1_options = SUB_MAP.get(st.session_state.main1, ["S+", "S", "S-"])
 sub1_index = 0
 # 如果 sub1 在 session_state 中存在且属于新选项，保留之前的选项
 if "sub1" in st.session_state and st.session_state.sub1 in sub1_options:
     sub1_index = sub1_options.index(st.session_state.sub1)
 
 sub1 = st.selectbox("细分1", sub1_options, index=sub1_index, key="sub1")
-        # 检查是否存在历史同名记录
-        update_mode = False
-        existing_latest_idx = None
-        if name.strip():
-            df_all = st.session_state.get("df", pd.DataFrame(columns=COLUMNS))
-            mask = df_all["名称"].fillna("").str.lower() == name.strip().lower()
-            if mask.any():
-                existing = df_all[mask].copy()
-                existing["__time_parsed"] = pd.to_datetime(existing["时间"], errors="coerce")
-                existing = existing.sort_values("__time_parsed")
-                latest_row = existing.iloc[-1]
-                st.info(f"检测到历史记录（共 {existing.shape[0]} 条）")
-                op = st.radio("操作选项", ("创建新条目","把这次作为二次评级更新最近一条记录"), index=0, key="op_mode")
-                if op == "把这次作为二次评级更新最近一条记录":
-                    update_mode = True
-                    existing_latest_idx = latest_row.name
-                    st.markdown("将把此次输入作为**二次评级**更新最近一条同名记录。")
-                    main2 = st.selectbox("主评级2（用于更新）", ["S","A","B","C"], key="main2")
-                    sub2 = st.selectbox("细分2（用于更新）", SUB_MAP[main2], key="sub2")
+# 检查是否存在历史同名记录
+update_mode = False
+existing_latest_idx = None
+if name.strip():
+    df_all = st.session_state.get("df", pd.DataFrame(columns=COLUMNS))
+    mask = df_all["名称"].fillna("").str.lower() == name.strip().lower()
+    if mask.any():
+        existing = df_all[mask].copy()
+        existing["__time_parsed"] = pd.to_datetime(existing["时间"], errors="coerce")
+        existing = existing.sort_values("__time_parsed")
+        latest_row = existing.iloc[-1]
+        st.info(f"检测到历史记录（共 {existing.shape[0]} 条）")
+        op = st.radio("操作选项", ("创建新条目", "把这次作为二次评级更新最近一条记录"), index=0, key="op_mode")
+        if op == "把这次作为二次评级更新最近一条记录":
+            update_mode = True
+            existing_latest_idx = latest_row.name
+            st.markdown("将把此次输入作为**二次评级**更新最近一条同名记录。")
+            main2 = st.selectbox("主评级2（用于更新）", ["S", "A", "B", "C"], key="main2")
+            sub2 = st.selectbox("细分2（用于更新）", SUB_MAP[main2], key="sub2")
 
-        mood = st.radio("愉悦度", ["愉悦","还行","不愉悦"], index=1, key="mood_input")
-        remark = st.text_area("备注", key="remark_input")
-        photo = st.file_uploader("上传照片", type=["png","jpg","jpeg"], key="photo_input")
+mood = st.radio("愉悦度", ["愉悦", "还行", "不愉悦"], index=1, key="mood_input")
+remark = st.text_area("备注", key="remark_input")
+photo = st.file_uploader("上传照片", type=["png", "jpg", "jpeg"], key="photo_input")
 
-        submitted = st.form_submit_button("保存")
+submitted = st.form_submit_button("保存")
 
-    if submitted:
-        if not name.strip():
-            st.warning("请输入名称！")
-        else:
-            if update_mode and existing_latest_idx is not None:
-                df_all = st.session_state.df
-                prev_sub1 = df_all.at[existing_latest_idx,"次评级1"]
-                v1 = SCORE_MAP.get(prev_sub1)
-                v2 = SCORE_MAP.get(sub2)
-                if v1 is None or v2 is None:
-                    st.error("读取历史评级或当前评级失败。")
-                else:
-                    final_score = round(w1*v1 + w2*v2,3)
-                    rec = "推荐" if final_score>=4.2 else ("还行" if final_score>=3.0 else "不推荐")
-                    df_all.at[existing_latest_idx,"主评级2"] = main2
-                    df_all.at[existing_latest_idx,"次评级2"] = sub2
-                    df_all.at[existing_latest_idx,"最终分"] = final_score
-                    df_all.at[existing_latest_idx,"最终推荐"] = rec
-                    df_all.at[existing_latest_idx,"时间"] = now_str()
-                    df_all.at[existing_latest_idx,"用户"] = user
-                    if photo:
-                        fn = save_uploaded_image(photo)
-                        df_all.at[existing_latest_idx,"照片文件名"] = fn
-                    save_data(df_all)
-                    st.session_state.df = df_all
-                    st.success("已更新最近一条记录（作为二次评级）")
-                    st.rerun()
-            else:
-                v1 = SCORE_MAP.get(sub1)
-                final_score = round(v1,3)
-                rec = "推荐" if final_score>=4.2 else ("还行" if final_score>=3.0 else "不推荐")
-                photo_name = save_uploaded_image(photo) if photo else ""
-                new_row = {
-                    "时间": now_str(),
-                    "用户": user,
-                    "物品类型": itype,
-                    "名称": name,
-                    "链接": link,
-                    "情境": ctx,
-                    "主评级1": main1,
-                    "次评级1": sub1,
-                    "主评级2": "",
-                    "次评级2": "",
-                    "最终分": final_score,
-                    "最终推荐": rec,
-                    "愉悦度": mood,
-                    "备注": remark,
-                    "照片文件名": photo_name,
-                    "记录ID": uuid4().hex
-                }
-                st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
-                save_data(st.session_state.df)
-                st.success("已保存新记录！")
-                if mood == "不愉悦":
-                    st.info("宝宝一难过，小狗的世界天都黑了，我会一直陪着你的。❤️")
-                else:
-                    st.info("小狗好爱好爱你 ❤️")
 if submitted:
-        v1, v2 = SCORE_MAP[sub1], SCORE_MAP[sub2]
-        final_score = round(w1*v1+w2*v2,3)
-        if final_score>=4.2: rec="推荐"
-        elif final_score>=3.0: rec="还行"
-        else: rec="不推荐"
-        photo_name = save_uploaded_image(photo) if photo else ""
-        new_row = {
-            "时间": now_str(),
-            "物品类型": itype,
-            "名称": name,
-            "链接": link,
-            "情境": ctx,
-            "主评级1": main1,"次评级1": sub1,
-            "主评级2": main2,"次评级2": sub2,
-            "最终分": final_score,"最终推荐": rec,
-            "愉悦度": mood,"备注": remark,
-            "照片文件名": photo_name,
-            "记录ID": uuid4().hex
-        }
-        st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
-        save_data(st.session_state.df)
-        st.success("保存成功！")
-
-        # --- 情话 & 安慰 ---
-        love_lines = [
-            "宝贝，和你在一起的点滴我都想收藏。",
-            "看到你笑，我就觉得今天值了。",
-            "你就是我心里永远的欢喜。",
-            "有你的日子，普通的生活也会发光。"
-        ]
-        comfort_lines = [
-            "别难过啦，我永远在你身边陪着你。",
-            "抱抱你，一切都会慢慢好起来的。",
-            "小狗希望你能多笑一点，不开心都给我。",
-            "今天的乌云，也挡不住我对你满满的爱。"
-        ]
-        if mood == "不愉悦":
-            st.info(random.choice(comfort_lines))
+    if not name.strip():
+        st.warning("请输入名称！")
+    else:
+        if update_mode and existing_latest_idx is not None:
+            df_all = st.session_state.df
+            prev_sub1 = df_all.at[existing_latest_idx, "次评级1"]
+            v1 = SCORE_MAP.get(prev_sub1)
+            v2 = SCORE_MAP.get(sub2)
+            if v1 is None or v2 is None:
+                st.error("读取历史评级或当前评级失败。")
+            else:
+                final_score = round(w1 * v1 + w2 * v2, 3)
+                rec = "推荐" if final_score >= 4.2 else ("还行" if final_score >= 3.0 else "不推荐")
+                df_all.at[existing_latest_idx, "主评级2"] = main2
+                df_all.at[existing_latest_idx, "次评级2"] = sub2
+                df_all.at[existing_latest_idx, "最终分"] = final_score
+                df_all.at[existing_latest_idx, "最终推荐"] = rec
+                df_all.at[existing_latest_idx, "时间"] = now_str()
+                df_all.at[existing_latest_idx, "用户"] = user
+                if photo:
+                    fn = save_uploaded_image(photo)
+                    df_all.at[existing_latest_idx, "照片文件名"] = fn
+                save_data(df_all)
+                st.session_state.df = df_all
+                st.success("已更新最近一条记录（作为二次评级）")
+                st.rerun()
         else:
-            st.info(random.choice(love_lines))
+            v1 = SCORE_MAP.get(sub1)
+            final_score = round(v1, 3)
+            rec = "推荐" if final_score >= 4.2 else ("还行" if final_score >= 3.0 else "不推荐")
+            photo_name = save_uploaded_image(photo) if photo else ""
+            new_row = {
+                "时间": now_str(),
+                "用户": user,
+                "物品类型": itype,
+                "名称": name,
+                "链接": link,
+                "情境": ctx,
+                "主评级1": main1,
+                "次评级1": sub1,
+                "主评级2": "",
+                "次评级2": "",
+                "最终分": final_score,
+                "最终推荐": rec,
+                "愉悦度": mood,
+                "备注": remark,
+                "照片文件名": photo_name,
+                "记录ID": uuid4().hex
+            }
+            st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
+            save_data(st.session_state.df)
+            st.success("已保存新记录！")
+            if mood == "不愉悦":
+                st.info("宝宝一难过，小狗的世界天都黑了，我会一直陪着你的。❤️")
+            else:
+                st.info("小狗好爱好爱你 ❤️")
+if submitted:
+    v1, v2 = SCORE_MAP[sub1], SCORE_MAP[sub2]
+    final_score = round(w1 * v1 + w2 * v2, 3)
+    if final_score >= 4.2:
+        rec = "推荐"
+    elif final_score >= 3.0:
+        rec = "还行"
+    else:
+        rec = "不推荐"
+    photo_name = save_uploaded_image(photo) if photo else ""
+    new_row = {
+        "时间": now_str(),
+        "物品类型": itype,
+        "名称": name,
+        "链接": link,
+        "情境": ctx,
+        "主评级1": main1, "次评级1": sub1,
+        "主评级2": main2, "次评级2": sub2,
+        "最终分": final_score, "最终推荐": rec,
+        "愉悦度": mood, "备注": remark,
+        "照片文件名": photo_name,
+        "记录ID": uuid4().hex
+    }
+    st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
+    save_data(st.session_state.df)
+    st.success("保存成功！")
+
+    # --- 情话 & 安慰 ---
+    love_lines = [
+        "宝贝，和你在一起的点滴我都想收藏。",
+        "看到你笑，我就觉得今天值了。",
+        "你就是我心里永远的欢喜。",
+        "有你的日子，普通的生活也会发光。"
+    ]
+    comfort_lines = [
+        "别难过啦，我永远在你身边陪着你。",
+        "抱抱你，一切都会慢慢好起来的。",
+        "小狗希望你能多笑一点，不开心都给我。",
+        "今天的乌云，也挡不住我对你满满的爱。"
+    ]
+    if mood == "不愉悦":
+        st.info(random.choice(comfort_lines))
+    else:
+        st.info(random.choice(love_lines))
 
 with right:
     st.subheader("📚 记录总览")
     df_view = st.session_state.df.copy()
 
     # 用户筛选
-    current_user = st.selectbox("查看哪个用户的数据", ["uuu","ooo","全部"], index=2)
+    current_user = st.selectbox("查看哪个用户的数据", ["uuu", "ooo", "全部"], index=2)
     if current_user != "全部":
         df_view = df_view[df_view["用户"] == current_user]
 
@@ -401,12 +417,14 @@ st.markdown("---")
 st.subheader("🔥 心情连击")
 df = st.session_state.df
 if not df.empty:
-    df["日期"]=pd.to_datetime(df["时间"]).dt.date
-    daily = df.groupby("日期")["愉悦度"].apply(lambda x:"愉悦" if "愉悦" in x.values else "非愉悦")
-    streak=0
+    df["日期"] = pd.to_datetime(df["时间"]).dt.date
+    daily = df.groupby("日期")["愉悦度"].apply(lambda x: "愉悦" if "愉悦" in x.values else "非愉悦")
+    streak = 0
     for mood in reversed(daily.values):
-        if mood=="愉悦": streak+=1
-        else: break
+        if mood == "愉悦":
+            streak += 1
+        else:
+            break
     st.write(f"已经连续 **{streak} 天愉悦** ✨")
 else:
     st.info("暂无数据")
@@ -415,16 +433,16 @@ else:
 st.markdown("---")
 st.subheader("🎲 抽奖中心")
 lot = load_lottery()
-tab1, tab2, tab3 = st.tabs(["再来一次","获得奖励","管理奖池"])
+tab1, tab2, tab3 = st.tabs(["再来一次", "获得奖励", "管理奖池"])
 with tab1:
     if st.button("🎯 抽一次"):
-        st.success(random.choice(lot.get("再来一次",["再试一次"])))
+        st.success(random.choice(lot.get("再来一次", ["再试一次"])))
 with tab2:
     if st.button("🎁 获得奖励"):
-        st.success(random.choice(lot.get("获得奖励",["亲亲一下"])))
+        st.success(random.choice(lot.get("获得奖励", ["亲亲一下"])))
 with tab3:
-    a_text = st.text_area("再来一次奖池", "\n".join(lot.get("再来一次",[])))
-    b_text = st.text_area("获得奖励奖池", "\n".join(lot.get("获得奖励",[])))
+    a_text = st.text_area("再来一次奖池", "\n".join(lot.get("再来一次", [])))
+    b_text = st.text_area("获得奖励奖池", "\n".join(lot.get("获得奖励", [])))
     if st.button("保存奖池"):
         lot["再来一次"] = [x.strip() for x in a_text.splitlines() if x.strip()]
         lot["获得奖励"] = [x.strip() for x in b_text.splitlines() if x.strip()]
@@ -438,15 +456,16 @@ wishes = load_wishes()
 new_wish = st.text_input("添加心愿")
 if st.button("添加心愿"):
     if new_wish.strip():
-        wishes.append({"text":new_wish.strip(),"done":False,"id":uuid4().hex})
+        wishes.append({"text": new_wish.strip(), "done": False, "id": uuid4().hex})
         save_wishes(wishes)
         st.rerun()
 for w in wishes:
-    col1,col2=st.columns([6,1])
-    with col1: st.write(("✅" if w["done"] else "🔲")+w["text"])
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.write(("✅" if w["done"] else "🔲") + w["text"])
     with col2:
         if st.button("切换", key=w["id"]):
-            w["done"]=not w["done"]
+            w["done"] = not w["done"]
             save_wishes(wishes)
             st.rerun()
 
@@ -466,11 +485,11 @@ if st.button("发送留言"):
 msgs = load_messages()
 
 # 浏览功能：按关键字搜索 + 选择显示最近多少条
-colA, colB = st.columns([1,1])
+colA, colB = st.columns([1, 1])
 with colA:
     kw_msg = st.text_input("搜索留言关键字", "")
 with colB:
-    limit = st.selectbox("显示最近多少条", [5,10,20,50,100], index=1)
+    limit = st.selectbox("显示最近多少条", [5, 10, 20, 50, 100], index=1)
 
 if kw_msg.strip():
     msgs_view = msgs[msgs["留言"].str.contains(kw_msg, na=False)]
