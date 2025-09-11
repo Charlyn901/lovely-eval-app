@@ -156,7 +156,7 @@ with left:
 
         # 主评级 + 次评级 (动态)
         main1 = st.selectbox("主评级1", ["S","A","B","C"], key="main1")
-        sub1_options=SUB_MAP.get(st.session_state.main,["S+","S","S-"])
+        sub1_options=SUB_MAP.get(st.session_state.main1,["S+","S","S-"])
         sub1 = st.selectbox("细分1", sub1_options, key="sub1")
 
         # 检查是否存在历史同名记录
