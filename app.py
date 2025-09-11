@@ -269,7 +269,8 @@ with left:
                         if love_data.get("love"):
                             st.info(random.choice(love_data["love"]))
                         else:
-                            st.info("你是我的小确幸。")    if submitted:
+                            st.info("你是我的小确幸。")    
+if submitted:
         v1, v2 = SCORE_MAP[sub1], SCORE_MAP[sub2]
         final_score = round(w1*v1+w2*v2,3)
         if final_score>=4.2: rec="推荐"
